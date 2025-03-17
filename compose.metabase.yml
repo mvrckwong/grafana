@@ -1,45 +1,38 @@
-name: metabase-instance
+name: grafana-instance
 
 services:
-  metabase:
-    image: metabase/metabase:latest
-    container_name: metabase
-    hostname: metabase
-    volumes:
-    - metabase_data:/metabase-data
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
     ports:
-      - 3000:3000
-    environment:
-      MB_DB_TYPE: postgres
-      MB_DB_DBNAME: metabase
-      MB_DB_PORT: 5432
-      MB_DB_USER: metabase
-      MB_DB_PASS: password
-      MB_DB_HOST: postgres
-    networks:
-      - metanet1
-    healthcheck:
-      test: curl --fail -I http://localhost:3000/api/health || exit 1
-      interval: 15s
-      timeout: 5s
-      retries: 5
-  postgres:
-    image: postgres:latest
-    container_name: metabase-postgres
-    hostname: postgres
-    environment:
-      POSTGRES_USER: metabase
-      POSTGRES_DB: metabase
-      POSTGRES_PASSWORD: password
-    networks:
-      - metanet1
+      - "3000:3000"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-networks:
-  metanet1:
-    driver: bridge
+      - grafana-storage:/var/lib/grafana
+      # Mount your GCP service account credentials
+      # - ./gcp-credentials.json:/etc/grafana/gcp-credentials.json:ro
+      - ./config/bq-keyfile.json:/etc/grafana/gcp-credentials.json:ro
+    environment:
+      # Basic Grafana configuration
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=securepassword  # Change this in production
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      
+      # GCP Authentication config
+      - GF_AUTH_GCE_ENABLED=true
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=grafana-bigquery-datasource
+      
+      # Optional: Uncomment to enable alerting
+      - GF_UNIFIED_ALERTING_ENABLED=true
+      
+    networks:
+      - grafana-network
 
 volumes:
-  metabase_data:
-  postgres_data:
+  grafana-storage:
+    driver: local
+
+networks:
+  grafana-network:
+    driver: bridge
