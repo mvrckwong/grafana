@@ -1,0 +1,45 @@
+version: '3.9' # Specify Compose file version
+
+services:
+  grafana:
+    image: grafana/grafana:10.4.1 # Use a specific stable version, check for the latest suitable one
+    container_name: grafana
+    ports:
+      - "3000:3000" # Map host port 3000 to container port 3000
+    volumes:
+      - grafana-data:/var/lib/grafana # Use a named volume for persistent Grafana data
+      # - ./grafana/provisioning:/etc/grafana/provisioning # Uncomment to mount custom provisioning files (datasources, dashboards)
+      # - ./grafana/grafana.ini:/etc/grafana/grafana.ini  # Uncomment to mount a custom grafana.ini configuration file
+    environment:
+      # === Security ===
+      # Set a secure admin password.
+      # !! IMPORTANT !! Avoid hardcoding secrets here for production.
+      # Use Docker Secrets or an .env file (see notes below).
+      GF_SECURITY_ADMIN_USER: admin # Default is admin, change if desired
+      GF_SECURITY_ADMIN_PASSWORD: YourStrongPasswordHere # CHANGE THIS!
+
+      # === Server Settings (Optional) ===
+      # GF_SERVER_ROOT_URL: http://localhost:3000 # Set the external URL, useful if behind a proxy
+      # GF_SERVER_DOMAIN: your.grafana.domain # Set if using a specific domain
+
+      # === Plugin Installation (Optional) ===
+      # Install plugins separated by commas
+      # GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-worldmap-panel
+
+      # === Other Settings (Add as needed) ===
+      # GF_LOG_LEVEL: info # Options: debug, info, warn, error, critical
+      # GF_AUTH_DISABLE_LOGIN_FORM: false
+      # GF_AUTH_ANONYMOUS_ENABLED: false
+
+    user: "472:472" # Run as the grafana user (UID 472, GID 472) for security
+    restart: unless-stopped # Restart policy
+    networks:
+      - monitoring-net # Attach to the custom network
+
+networks:
+  monitoring-net: # Define the custom bridge network
+    driver: bridge
+
+volumes:
+  grafana-data: # Define the named volume for Grafana data
+    driver: local
