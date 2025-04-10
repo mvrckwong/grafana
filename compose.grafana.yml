@@ -1,5 +1,3 @@
-# docker-compose.prod.yml
-# Use a production-oriented name
 name: grafana-instance-prod
 
 services:
