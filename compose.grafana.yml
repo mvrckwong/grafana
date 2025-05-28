@@ -1,99 +1,45 @@
-name: grafana-instance-prod
+name: grafana-monitoring-dev
+
 
 services:
-  grafana:
-    image: grafana/grafana:10.4.1
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
     ports:
-      # Expose only if accessed directly. Ideally, place behind a reverse proxy.
-      # If using a reverse proxy (like Nginx/Traefik), you might remove this
-      # and only expose the port within the Docker network.
-      - "127.0.0.1:3000:3000" # Bind to localhost only for security if direct access needed
-      # - "3000:3000" # Original - exposes on all interfaces
-
+      - "9090:9090"
     volumes:
-      # Persist Grafana data (dashboards, users, settings) using a named volume. Crucial for production.
-      - grafana-data:/var/lib/grafana
-      # Optional: Mount custom configuration files if needed
-      # - ./grafana/provisioning:/etc/grafana/provisioning
-      # - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-
-    environment:
-      # --- Security ---
-      # MUST change these in your .env file for production! Do NOT use defaults.
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-changeme} # Changed default hint
-      # Disable anonymous access (highly recommended for production)
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
-      # Consider disabling login form if using OAuth/SAML/LDAP
-      # GF_AUTH_DISABLE_LOGIN_FORM: "true"
-      # Set the secret key used for signing cookies etc. Generate a strong random key.
-      GF_SECURITY_SECRET_KEY: ${GRAFANA_SECRET_KEY:-needs_strong_secret_key} # Add this!
-
-      # --- Server ---
-      # Set the public URL Grafana will be accessed from (IMPORTANT when behind proxy)
-      GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL:-http://localhost:3000} # Adjust to your public URL (e.g., https://grafana.yourdomain.com)
-      GF_SERVER_HTTP_PORT: "3000" # Ensure this matches the internal port
-
-      # --- Logging ---
-      # Adjust log level for production (options: "debug", "info", "warn", "error", "critical")
-      GF_LOG_LEVEL: ${GF_LOG_LEVEL:-warn}
-      # Log mode (options: "console", "file", "syslog")
-      GF_LOG_MODE: console file
-
-      # --- Other Recommendations ---
-      # Configure SMTP for alerting (see Grafana docs)
-      # GF_SMTP_ENABLED: "true"
-      # GF_SMTP_HOST: ${GF_SMTP_HOST}
-      # GF_SMTP_USER: ${GF_SMTP_USER}
-      # GF_SMTP_PASSWORD: ${GF_SMTP_PASSWORD}
-      # GF_SMTP_FROM_ADDRESS: ${GF_SMTP_FROM_ADDRESS}
-
-    # Run as non-root user (grafana user ID/GID inside the container) - Good security practice!
-    user: "472:472"
-
-    # Restart policy: ensures the container restarts automatically unless explicitly stopped.
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
     restart: unless-stopped
 
-    # Load variables from a .env file - keeps secrets out of the compose file.
-    env_file:
-      - .env
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    restart: unless-stopped
 
-    networks:
-      - monitoring-net
-
-    # Add healthcheck to ensure Grafana is actually responding
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s # Give Grafana time to start up
-
-    # Set resource limits (adjust based on your host and expected load)
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0' # Limit to 1 CPU core
-          memory: 1G  # Limit to 1GB RAM
-        reservations:
-          cpus: '0.25' # Reserve 0.25 CPU core
-          memory: 256M # Reserve 256MB RAM
-
-    # Configure logging driver (e.g., limit log file size and rotate)
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m" # Max size of 10 megabytes
-        max-file: "3"   # Keep 3 rotated log files
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    ports:
+      - "9187:9187"
+    volumes:
+      - ./postgres-exporter/postgres_exporter.yml:/postgres_exporter.yml
+    command: ["--config.file=/postgres_exporter.yml"]
+    restart: unless-stopped
 
 networks:
-  monitoring-net:
-    driver: bridge
-    # Consider making the network internal if Grafana is only accessed via a reverse proxy
-    # internal: true
-
-volumes:
-  # Define the named volume for persistent data
-  grafana-data:
-    driver: local
-    # Consider backup strategies for this volume!
+  default:
+    name: monitoring
