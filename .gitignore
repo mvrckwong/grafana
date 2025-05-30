@@ -3,6 +3,7 @@ grafana_admin_user.txt
 grafana_admin_password.txt
 prometheus/data/
 grafana/data/
+secrets/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
