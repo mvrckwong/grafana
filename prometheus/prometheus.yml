@@ -3,27 +3,23 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  # Monitor all environments (dev and production)
-  - job_name: 'database-monitoring'
+
+  # Monitor for production environments
+  - job_name: 'postgres-exporter-prod'
     file_sd_configs:
       - files:
-          - '/etc/prometheus/targets/*.json'  # Watches both dev.json and production.json
-        refresh_interval: 30s                # Check for file changes every 30s
+          - '/etc/prometheus/targets/production.json'
+        refresh_interval: 30s
     metrics_path: /probe
     scrape_interval: 30s
     scrape_timeout: 10s
 
-  # Alternative: Separate jobs for each environment
-  # - job_name: 'production-databases'
-  #   file_sd_configs:
-  #     - files:
-  #         - '/etc/prometheus/targets/production.json'
-  #   metrics_path: /probe
-  #   scrape_interval: 30s
-  #
-  # - job_name: 'dev-databases'
-  #   file_sd_configs:
-  #     - files:
-  #         - '/etc/prometheus/targets/dev.json'
-  #   metrics_path: /probe
-  #   scrape_interval: 60s  # Less frequent for dev
+  # Monitor for dev environments
+  - job_name: 'postgres-exporter-dev'
+    file_sd_configs:
+      - files:
+          - '/etc/prometheus/targets/dev.json'
+        refresh_interval: 60s
+    metrics_path: /probe
+    scrape_interval: 30s
+    scrape_timeout: 10s
