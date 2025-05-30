@@ -1,4 +1,4 @@
-name: grafana-monitoring-dev
+name: grafana-monitoring-prod
 
 
 services:
@@ -7,15 +7,18 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./targets:/etc/prometheus/targets
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./targets:/etc/prometheus/targets:ro
       - ./prometheus/data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=60d'
+      - '--storage.tsdb.retention.size=3GB'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
     restart: unless-stopped
     env_file:
       - .env
@@ -37,13 +40,14 @@ services:
     image: quay.io/prometheuscommunity/postgres-exporter:latest
     ports:
       - "9187:9187"
+    environment:
+      - PG_EXPORTER_WEB_LISTEN_ADDRESS=:9187
+      - PG_EXPORTER_DISABLE_DEFAULT_METRICS=false
+      - PG_EXPORTER_DISABLE_SETTINGS_METRICS=false
+      # - PG_EXPORTER_EXTEND_QUERY_PATH=/etc/postgres_exporter/queries.yaml
     volumes:
-      - ./postgres-exporter/postgres_exporter.yml:/postgres_exporter.yml
-    command: ["--config.file=/postgres_exporter.yml"]
+      - ./queries.yaml:/etc/postgres_exporter/queries.yaml:ro
+    command:
+      - '--web.telemetry-path=/metrics'
+      - '--web.listen-address=:9187'
     restart: unless-stopped
-    env_file:
-      - .env
-
-networks:
-  default:
-    name: monitoring
