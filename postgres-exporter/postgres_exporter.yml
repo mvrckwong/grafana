@@ -1,0 +1,17 @@
+auth_modules:
+  gateway-1:
+    type: userpass
+    userpass:
+      username: ${DB1_USER}
+      password: ${DB1_PASSWORD}
+    options:
+      sslmode: require
+      
+  # db2:
+  #   type: userpass
+  #   userpass:
+  #     username: ${DB2_USER}
+  #     password: ${DB2_PASSWORD}
+  #   options:
+  #     sslmode: require
+      

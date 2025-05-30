@@ -7,12 +7,12 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'postgres-db1'
+  - job_name: 'sample-gateway-1'
     static_configs:
-      - targets: ['your-cloud-db1.amazonaws.com:5432']
+      - targets: ['ep-round-frost-a15w7h0k.ap-southeast-1.aws.neon.tech:5432/neondb']
     metrics_path: /probe
     params:
-      auth_module: [db1]
+      auth_module: [gateway-1]
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -21,30 +21,30 @@ scrape_configs:
       - target_label: __address__
         replacement: postgres-exporter:9187
 
-  - job_name: 'postgres-db2'
-    static_configs:
-      - targets: ['your-cloud-db2.amazonaws.com:5432']
-    metrics_path: /probe
-    params:
-      auth_module: [db2]
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: postgres-exporter:9187
+  # - job_name: 'postgres-db2'
+  #   static_configs:
+  #     - targets: ['${DB2_TARGET}']
+  #   metrics_path: /probe
+  #   params:
+  #     auth_module: [db2]
+  #   relabel_configs:
+  #     - source_labels: [__address__]
+  #       target_label: __param_target
+  #     - source_labels: [__param_target]
+  #       target_label: instance
+  #     - target_label: __address__
+  #       replacement: postgres-exporter:9187
 
-  - job_name: 'postgres-db3'
-    static_configs:
-      - targets: ['your-cloud-db3.amazonaws.com:5432']
-    metrics_path: /probe
-    params:
-      auth_module: [db3]
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: postgres-exporter:9187
+  # - job_name: 'postgres-db3'
+  #   static_configs:
+  #     - targets: ['${DB3_TARGET}']
+  #   metrics_path: /probe
+  #   params:
+  #     auth_module: [db3]
+  #   relabel_configs:
+  #     - source_labels: [__address__]
+  #       target_label: __param_target
+  #     - source_labels: [__param_target]
+  #       target_label: instance
+  #     - target_label: __address__
+  #       replacement: postgres-exporter:9187

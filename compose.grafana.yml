@@ -4,12 +4,12 @@ name: grafana-monitoring-dev
 services:
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./prometheus/data:/prometheus
+      - ./targets:/etc/prometheus/targets
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -17,10 +17,11 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
     restart: unless-stopped
+    env_file:
+      - .env
 
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
     ports:
       - "3000:3000"
     volumes:
@@ -29,16 +30,19 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
     restart: unless-stopped
+    env_file:
+      - .env
 
   postgres-exporter:
     image: quay.io/prometheuscommunity/postgres-exporter:latest
-    container_name: postgres-exporter
     ports:
       - "9187:9187"
     volumes:
       - ./postgres-exporter/postgres_exporter.yml:/postgres_exporter.yml
     command: ["--config.file=/postgres_exporter.yml"]
     restart: unless-stopped
+    env_file:
+      - .env
 
 networks:
   default:
