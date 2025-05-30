@@ -3,48 +3,27 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
-
-  - job_name: 'sample-gateway-1'
-    static_configs:
-      - targets: ['ep-round-frost-a15w7h0k.ap-southeast-1.aws.neon.tech:5432/neondb']
+  # Monitor all environments (dev and production)
+  - job_name: 'database-monitoring'
+    file_sd_configs:
+      - files:
+          - '/etc/prometheus/targets/*.json'  # Watches both dev.json and production.json
+        refresh_interval: 30s                # Check for file changes every 30s
     metrics_path: /probe
-    params:
-      auth_module: [gateway-1]
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: postgres-exporter:9187
+    scrape_interval: 30s
+    scrape_timeout: 10s
 
-  # - job_name: 'postgres-db2'
-  #   static_configs:
-  #     - targets: ['${DB2_TARGET}']
+  # Alternative: Separate jobs for each environment
+  # - job_name: 'production-databases'
+  #   file_sd_configs:
+  #     - files:
+  #         - '/etc/prometheus/targets/production.json'
   #   metrics_path: /probe
-  #   params:
-  #     auth_module: [db2]
-  #   relabel_configs:
-  #     - source_labels: [__address__]
-  #       target_label: __param_target
-  #     - source_labels: [__param_target]
-  #       target_label: instance
-  #     - target_label: __address__
-  #       replacement: postgres-exporter:9187
-
-  # - job_name: 'postgres-db3'
-  #   static_configs:
-  #     - targets: ['${DB3_TARGET}']
+  #   scrape_interval: 30s
+  #
+  # - job_name: 'dev-databases'
+  #   file_sd_configs:
+  #     - files:
+  #         - '/etc/prometheus/targets/dev.json'
   #   metrics_path: /probe
-  #   params:
-  #     auth_module: [db3]
-  #   relabel_configs:
-  #     - source_labels: [__address__]
-  #       target_label: __param_target
-  #     - source_labels: [__param_target]
-  #       target_label: instance
-  #     - target_label: __address__
-  #       replacement: postgres-exporter:9187
+  #   scrape_interval: 60s  # Less frequent for dev

@@ -1,0 +1,11 @@
+[
+	{
+	  "targets": ["ep-round-frost-a15w7h0k.ap-southeast-1.aws.neon.tech:5432/neondb"],
+	  "labels": {
+	    "env": "production",
+	    "service": "gateway",
+	    "database": "neondb",
+	    "region": "ap-southeast-1"
+	  }
+	}
+]

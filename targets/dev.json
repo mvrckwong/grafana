@@ -1,0 +1,29 @@
+[
+	{
+	  "targets": ["localhost:5432/dev_neondb"],
+	  "labels": {
+	    "env": "dev",
+	    "service": "gateway",
+	    "database": "dev_neondb",
+	    "region": "local"
+	  }
+	},
+	{
+	  "targets": ["localhost:5432/dev_userdb"],
+	  "labels": {
+	    "env": "dev",
+	    "service": "user-service",
+	    "database": "dev_userdb", 
+	    "region": "local"
+	  }
+	},
+	{
+	  "targets": ["dev-db.company.local:5432/testdb"],
+	  "labels": {
+	    "env": "dev",
+	    "service": "integration-tests",
+	    "database": "testdb",
+	    "region": "local"
+	  }
+	}
+    ]
