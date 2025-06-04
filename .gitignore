@@ -1,9 +1,18 @@
-# Custom
-grafana_admin_user.txt
-grafana_admin_password.txt
-prometheus/data/
+# Grafana logs (from your compose file)
+grafana/logs/
 grafana/data/
-secrets/
+grafana/plugins/
+grafana/provisioning/
+
+# Docker Compose override files
+docker-compose.override.yml
+compose.override.yml
+
+# Temporary files
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
