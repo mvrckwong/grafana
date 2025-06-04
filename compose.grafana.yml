@@ -25,14 +25,8 @@ services:
       # Security Configuration
       # Allow embedding Grafana in iframes (set to false if not needed)
       - GF_SECURITY_ALLOW_EMBEDDING=true
-      
-      # Force HTTPS cookies (important for production with SSL)
       - GF_SECURITY_COOKIE_SECURE=true
-      
-      # Prevent CSRF attacks by restricting cookie usage
       - GF_SECURITY_COOKIE_SAMESITE=strict
-      
-      # Disable Gravatar to prevent external requests
       - GF_SECURITY_DISABLE_GRAVATAR=true
       
       # Enable HTTP Strict Transport Security (HSTS) for HTTPS enforcement
@@ -47,11 +41,7 @@ services:
       # Server Configuration
       # Root URL for Grafana (important for reverse proxy setups)
       - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3000}
-      
-      # Domain name for the Grafana instance
       - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN:-localhost}
-      
-      # Enforce domain matching for additional security
       - GF_SERVER_ENFORCE_DOMAIN=true
       
       # Database Configuration
