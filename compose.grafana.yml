@@ -103,7 +103,7 @@ services:
       - GF_SMTP_USER=${GRAFANA_SMTP_USER:-}             # SMTP username
       - GF_SMTP_PASSWORD=${GRAFANA_SMTP_PASSWORD:-}     # SMTP password
       - GF_SMTP_FROM_ADDRESS=${GRAFANA_SMTP_FROM:-grafana@example.com}  # From address
-      
+    
     # Restart policy: always restart unless manually stopped
     restart: unless-stopped
     
@@ -208,4 +208,4 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ./grafana/logs
+      device: ./grafana/logs 

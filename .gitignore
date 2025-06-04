@@ -2,7 +2,6 @@
 grafana/logs/
 grafana/data/
 grafana/plugins/
-grafana/provisioning/
 
 # Docker Compose override files
 docker-compose.override.yml
