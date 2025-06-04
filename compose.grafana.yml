@@ -1,72 +1,222 @@
 name: grafana-monitoring-prod
 
-
 services:
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./targets:/etc/prometheus/targets:ro
-      - ./prometheus/data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=60d'
-      - '--storage.tsdb.retention.size=3GB'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
-    restart: unless-stopped
-    env_file:
-      - .env
-
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.2.3
+    container_name: grafana-server
     ports:
       - "3000:3000"
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/data:/var/lib/grafana
+      - ./grafana/logs:/var/log/grafana
+      - ./grafana/plugins:/var/lib/grafana/plugins
+    
     environment:
+      # Admin Configuration
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      
+      # Plugin Configuration
+      # Pre-install useful plugins on container startup
+      # Add more plugins as comma-separated list
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel,grafana-worldmap-panel
+      
+      # Security Configuration
+      # Allow embedding Grafana in iframes (set to false if not needed)
       - GF_SECURITY_ALLOW_EMBEDDING=true
+      
+      # Force HTTPS cookies (important for production with SSL)
       - GF_SECURITY_COOKIE_SECURE=true
+      
+      # Prevent CSRF attacks by restricting cookie usage
+      - GF_SECURITY_COOKIE_SAMESITE=strict
+      
+      # Disable Gravatar to prevent external requests
       - GF_SECURITY_DISABLE_GRAVATAR=true
+      
+      # Enable HTTP Strict Transport Security (HSTS) for HTTPS enforcement
       - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
-      - GF_SECURITY_STRICT_TRANSPORT_SECURITY_MAX_AGE_SECONDS=31536000
+      - GF_SECURITY_STRICT_TRANSPORT_SECURITY_MAX_AGE_SECONDS=31536000  # 1 year
+      
+      # Additional security headers to prevent XSS and content sniffing
+      - GF_SECURITY_X_CONTENT_TYPE_OPTIONS=true
+      - GF_SECURITY_X_XSS_PROTECTION=true
+      - GF_SECURITY_CONTENT_SECURITY_POLICY=true
+      
+      # Server Configuration
+      # Root URL for Grafana (important for reverse proxy setups)
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3000}
+      
+      # Domain name for the Grafana instance
+      - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN:-localhost}
+      
+      # Enforce domain matching for additional security
+      - GF_SERVER_ENFORCE_DOMAIN=true
+      
+      # Database Configuration
+      # Database type: sqlite3 (default), mysql, postgres
+      # For production, consider using external PostgreSQL or MySQL
+      - GF_DATABASE_TYPE=${GRAFANA_DB_TYPE:-sqlite3}
+      
+      # Database connection settings (only needed for external databases)
+      - GF_DATABASE_HOST=${GRAFANA_DB_HOST:-}        # e.g., postgres:5432
+      - GF_DATABASE_NAME=${GRAFANA_DB_NAME:-grafana}  # Database name
+      - GF_DATABASE_USER=${GRAFANA_DB_USER:-}         # Database username
+      - GF_DATABASE_PASSWORD=${GRAFANA_DB_PASSWORD:-} # Database password
+      
+      # Logging Configuration
+      # Log to file instead of console for better log management
+      - GF_LOG_MODE=file
+      
+      # Log level: debug, info, warn, error, critical
+      - GF_LOG_LEVEL=${GRAFANA_LOG_LEVEL:-info}
+      
+      # Custom log filters (optional, for debugging specific components)
+      - GF_LOG_FILTERS=${GRAFANA_LOG_FILTERS:-}
+      
+      # Session Configuration
+      # Use file-based sessions (alternative: redis, mysql, postgres)
+      - GF_SESSION_PROVIDER=file
+      
+      # Secure session cookies (requires HTTPS in production)
+      - GF_SESSION_COOKIE_SECURE=true
+      
+      # Custom session cookie name
+      - GF_SESSION_COOKIE_NAME=grafana_sess
+      
+      # User Management
+      # Disable user registration for security
+      - GF_USERS_ALLOW_SIGN_UP=false
+      
+      # Prevent users from creating organizations
+      - GF_USERS_ALLOW_ORG_CREATE=false
+      
+      # Automatically assign new users to default organization
+      - GF_USERS_AUTO_ASSIGN_ORG=true
+      
+      # Default role for new users (Viewer, Editor, Admin)
+      - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Viewer
+      
+      # Authentication Configuration
+      # Disable anonymous access for security
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      
+      # Keep login form enabled (set to true if using external auth only)
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+      
+      # SMTP Configuration (Email Notifications)
+      # Enable SMTP for email notifications
+      - GF_SMTP_ENABLED=${GRAFANA_SMTP_ENABLED:-false}
+      
+      # SMTP server configuration
+      - GF_SMTP_HOST=${GRAFANA_SMTP_HOST:-}             # e.g., smtp.gmail.com:587
+      - GF_SMTP_USER=${GRAFANA_SMTP_USER:-}             # SMTP username
+      - GF_SMTP_PASSWORD=${GRAFANA_SMTP_PASSWORD:-}     # SMTP password
+      - GF_SMTP_FROM_ADDRESS=${GRAFANA_SMTP_FROM:-grafana@example.com}  # From address
+      
+    # Restart policy: always restart unless manually stopped
     restart: unless-stopped
+    
+    # Load additional environment variables from .env file
     env_file:
       - .env
+    
+    # Resource Management
+    # Set resource limits for production stability
+    deploy:
+      resources:
+        limits:
+          memory: 1G      # Maximum memory usage
+          cpus: '0.5'     # Maximum CPU usage (0.5 = 50% of one core)
+        reservations:
+          memory: 512M    # Guaranteed minimum memory
+          cpus: '0.25'    # Guaranteed minimum CPU
+    
+    # Security Options
+    # Prevent privilege escalation within container
+    security_opt:
+      - no-new-privileges:true
+    
+    # Allow write access (Grafana needs to write to data directory)
+    # Set to true only if using external storage for all data
+    read_only: false
+    
+    # Run as grafana user (UID:GID 472:472) instead of root
+    # This reduces security risks from container compromise
+    user: "472:472"
+    
+    # Health Check Configuration
+    # Monitor container health using Grafana's health API
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      interval: 30s      # Check every 30 seconds
+      timeout: 10s       # Timeout after 10 seconds
+      retries: 5         # Retry 5 times before marking unhealthy
+      start_period: 60s  # Wait 60 seconds before first check (allows plugin installation)
+    
+    # Container Labels
+    # Labels for service discovery and management
+    labels:
+      # Traefik reverse proxy configuration
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`${GRAFANA_DOMAIN:-localhost}`)"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      
+      # Watchtower auto-update configuration
+      - "com.centurylinklabs.watchtower.enable=true"
+      
+      # Custom labels for organization
+      - "app=grafana"
+      - "environment=production"
+    
+    # Logging Configuration
+    # Configure Docker logging driver for log rotation
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"    # Maximum log file size
+        max-file: "3"      # Keep 3 log files (30MB total)
+        labels: "app,environment"  # Include labels in logs
+    
+    # Network Configuration
+    # Connect to multiple networks for flexibility
     networks:
-      - monitoring
+      - monitoring  # Custom monitoring network
+      - default     # Default bridge network
 
-  postgres-exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter:latest
-    ports:
-      - "9187:9187"
-    environment:
-      - PG_EXPORTER_WEB_LISTEN_ADDRESS=:9187
-      - PG_EXPORTER_DISABLE_DEFAULT_METRICS=false
-      - PG_EXPORTER_DISABLE_SETTINGS_METRICS=false
-      # - PG_EXPORTER_EXTEND_QUERY_PATH=/etc/postgres_exporter/queries.yaml
-    volumes:
-      - ./queries.yaml:/etc/postgres_exporter/queries.yaml:ro
-    command:
-      - '--web.telemetry-path=/metrics'
-      - '--web.listen-address=:9187'
-    restart: unless-stopped
-
+# Network Definitions
 networks:
+  # Custom monitoring network for service isolation
   monitoring:
     driver: bridge
+    driver_opts:
+      # Custom bridge name for easier identification
+      com.docker.network.bridge.name: br-monitoring
+    ipam:
+      config:
+        # Dedicated subnet for monitoring services
+        - subnet: 172.20.0.0/16
+  
+  # Default network for general connectivity
+  default:
+    driver: bridge
+
+# Volume Definitions
+# Named volumes for better data management and portability
+volumes:
+  # Grafana data volume (dashboards, users, settings)
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./grafana/data
+  
+  # Grafana logs volume (application logs)
+  grafana_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./grafana/logs
