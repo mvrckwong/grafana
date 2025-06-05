@@ -1,0 +1,160 @@
+# Common Docker Compose Configuration Template
+# This file defines reusable configurations that can be applied to any service
+# without specifying Docker images, making it truly environment-agnostic
+
+# Common environment configurations
+x-common-security-env: &common-security-env
+  # Security Configuration
+  - GF_SECURITY_COOKIE_SECURE=true
+  - GF_SECURITY_COOKIE_SAMESITE=strict
+  - GF_SECURITY_DISABLE_GRAVATAR=true
+  - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
+  - GF_SECURITY_STRICT_TRANSPORT_SECURITY_MAX_AGE_SECONDS=31536000
+  - GF_SECURITY_X_CONTENT_TYPE_OPTIONS=true
+  - GF_SECURITY_X_XSS_PROTECTION=true
+  - GF_SECURITY_CONTENT_SECURITY_POLICY=true
+
+x-common-logging-env: &common-logging-env
+  # Logging Configuration
+  - GF_LOG_MODE=file
+  - GF_LOG_LEVEL=${GRAFANA_LOG_LEVEL:-info}
+  - GF_LOG_FILTERS=${GRAFANA_LOG_FILTERS:-}
+
+x-common-session-env: &common-session-env
+  # Session Configuration
+  - GF_SESSION_PROVIDER=file
+  - GF_SESSION_COOKIE_SECURE=true
+  - GF_SESSION_COOKIE_NAME=grafana_sess
+
+x-common-user-env: &common-user-env
+  # User Management
+  - GF_USERS_ALLOW_SIGN_UP=false
+  - GF_USERS_ALLOW_ORG_CREATE=false
+  - GF_USERS_AUTO_ASSIGN_ORG=true
+  - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Viewer
+
+x-common-auth-env: &common-auth-env
+  # Authentication Configuration
+  - GF_AUTH_ANONYMOUS_ENABLED=false
+  - GF_AUTH_DISABLE_LOGIN_FORM=false
+
+x-database-env: &database-env
+  # Database Configuration
+  - GF_DATABASE_TYPE=${GRAFANA_DB_TYPE:-sqlite3}
+  - GF_DATABASE_HOST=${GRAFANA_DB_HOST:-}
+  - GF_DATABASE_NAME=${GRAFANA_DB_NAME:-grafana}
+  - GF_DATABASE_USER=${GRAFANA_DB_USER:-}
+  - GF_DATABASE_PASSWORD=${GRAFANA_DB_PASSWORD:-}
+  
+  # PostgreSQL Database Connections
+  - POSTGRES_DB1_HOST=${POSTGRES_DB1_HOST}
+  - POSTGRES_DB1_PORT=${POSTGRES_DB1_PORT}
+  - POSTGRES_DB1_DATABASE=${POSTGRES_DB1_DATABASE}
+  - POSTGRES_DB1_USER=${POSTGRES_DB1_USER}
+  - POSTGRES_DB1_PASSWORD=${POSTGRES_DB1_PASSWORD}
+  
+  - POSTGRES_DB2_HOST=${POSTGRES_DB2_HOST}
+  - POSTGRES_DB2_PORT=${POSTGRES_DB2_PORT}
+  - POSTGRES_DB2_DATABASE=${POSTGRES_DB2_DATABASE}
+  - POSTGRES_DB2_USER=${POSTGRES_DB2_USER}
+  - POSTGRES_DB2_PASSWORD=${POSTGRES_DB2_PASSWORD}
+
+x-smtp-env: &smtp-env
+  # SMTP Configuration
+  - GF_SMTP_ENABLED=${GRAFANA_SMTP_ENABLED:-false}
+  - GF_SMTP_HOST=${GRAFANA_SMTP_HOST:-}
+  - GF_SMTP_USER=${GRAFANA_SMTP_USER:-}
+  - GF_SMTP_PASSWORD=${GRAFANA_SMTP_PASSWORD:-}
+  - GF_SMTP_FROM_ADDRESS=${GRAFANA_SMTP_FROM:-grafana@example.com}
+
+# Service configuration templates
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  env_file:
+    - .env
+
+x-deploy-config: &deploy-config
+  deploy:
+    resources:
+      limits:
+        memory: 1G
+        cpus: '0.5'
+      reservations:
+        memory: 512M
+        cpus: '0.25'
+
+x-security-config: &security-config
+  security_opt:
+    - no-new-privileges:true
+  read_only: false
+  user: "472:472"
+
+x-healthcheck-config: &healthcheck-config
+  healthcheck:
+    test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+x-logging-config: &logging-config
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+      labels: "app,environment"
+
+x-common-labels: &common-labels
+  labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.grafana.rule=Host(`${GRAFANA_DOMAIN:-localhost}`)"
+    - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    - "com.centurylinklabs.watchtower.enable=true"
+    - "app=grafana"
+    - "environment=production"
+
+x-network-config: &network-config
+  networks:
+    - monitoring
+    - default
+
+# Complete service template (without image specification)
+x-grafana-service-template: &grafana-service-template
+  <<: [*service-defaults, *deploy-config, *security-config, *healthcheck-config, *logging-config, *common-labels, *network-config]
+  ports:
+    - "3000:3000"
+  volumes:
+    - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    - ./grafana/data:/var/lib/grafana
+    - ./grafana/logs:/var/log/grafana
+    - ./grafana/plugins:/var/lib/grafana/plugins
+
+# Network definitions
+networks:
+  monitoring:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-monitoring
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  
+  default:
+    driver: bridge
+
+# Volume definitions
+volumes:
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./grafana/data
+  
+  grafana_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./grafana/logs 

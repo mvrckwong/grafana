@@ -1,42 +1,40 @@
 apiVersion: 1
 
 datasources:
-  # Neon PostgreSQL Database 1
-  - name: "${NEON_DB1_NAME:-Neon-Production}"
+  - name: "Neon Postgres - Production"
     type: postgres
     access: proxy
-    url: "${NEON_DB1_HOST:-your-neon-host1.neon.tech}:${NEON_DB1_PORT:-5432}"
-    database: "${NEON_DB1_DATABASE:-neondb}"
-    user: "${NEON_DB1_USER:-your-username}"
+    url: "${POSTGRES_DB1_HOST}:${POSTGRES_DB1_PORT}"
+    database: "${POSTGRES_DB1_DATABASE}"
+    user: "${POSTGRES_DB1_USER}"
     secureJsonData:
-      password: "${NEON_DB1_PASSWORD:-your-password}"
+      password: "${POSTGRES_DB1_PASSWORD}"
     jsonData:
-      sslmode: "require"  # Neon requires SSL
+      sslmode: "require"
       maxOpenConns: 100
       maxIdleConns: 25
       maxIdleConnsAuto: true
       connMaxLifetime: 14400
-      postgresVersion: 1500  # PostgreSQL 15
+      postgresVersion: 1500
       timescaledb: false
     editable: true
     orgId: 1
-    isDefault: true
+    isDefault: false
     version: 1
-    uid: neon-db1
+    uid: neon-db1-sample
 
-  # Neon PostgreSQL Database 2
-  - name: "${NEON_DB2_NAME:-Neon-Staging}"
+  - name: "Neon Postgres - Development"
     type: postgres
     access: proxy
-    url: "${NEON_DB2_HOST:-your-neon-host2.neon.tech}:${NEON_DB2_PORT:-5432}"
-    database: "${NEON_DB2_DATABASE:-neondb}"
-    user: "${NEON_DB2_USER:-your-username}"
+    url: "${POSTGRES_DB2_HOST}:${POSTGRES_DB2_PORT}"
+    database: "${POSTGRES_DB2_DATABASE}"
+    user: "${POSTGRES_DB2_USER}"
     secureJsonData:
-      password: "${NEON_DB2_PASSWORD:-your-password}"
+      password: "${POSTGRES_DB2_PASSWORD}"
     jsonData:
       sslmode: "require"
-      maxOpenConns: 50
-      maxIdleConns: 15
+      maxOpenConns: 100
+      maxIdleConns: 25
       maxIdleConnsAuto: true
       connMaxLifetime: 14400
       postgresVersion: 1500
@@ -45,27 +43,4 @@ datasources:
     orgId: 1
     isDefault: false
     version: 1
-    uid: neon-db2
-
-  # Neon PostgreSQL Database 3
-  - name: "${NEON_DB3_NAME:-Neon-Analytics}"
-    type: postgres
-    access: proxy
-    url: "${NEON_DB3_HOST:-your-neon-host3.neon.tech}:${NEON_DB3_PORT:-5432}"
-    database: "${NEON_DB3_DATABASE:-neondb}"
-    user: "${NEON_DB3_USER:-your-username}"
-    secureJsonData:
-      password: "${NEON_DB3_PASSWORD:-your-password}"
-    jsonData:
-      sslmode: "require"
-      maxOpenConns: 75
-      maxIdleConns: 20
-      maxIdleConnsAuto: true
-      connMaxLifetime: 14400
-      postgresVersion: 1500
-      timescaledb: false
-    editable: true
-    orgId: 1
-    isDefault: false
-    version: 1
-    uid: neon-db3 
+    uid: neon-db2-sample

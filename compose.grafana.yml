@@ -1,5 +1,7 @@
 name: grafana-monitoring-prod
 
+
+
 services:
   grafana:
     image: grafana/grafana:12.0.1
@@ -57,41 +59,25 @@ services:
       # Logging Configuration
       # Log to file instead of console for better log management
       - GF_LOG_MODE=file
-      
-      # Log level: debug, info, warn, error, critical
       - GF_LOG_LEVEL=${GRAFANA_LOG_LEVEL:-info}
-      
-      # Custom log filters (optional, for debugging specific components)
       - GF_LOG_FILTERS=${GRAFANA_LOG_FILTERS:-}
       
       # Session Configuration
       # Use file-based sessions (alternative: redis, mysql, postgres)
       - GF_SESSION_PROVIDER=file
-      
-      # Secure session cookies (requires HTTPS in production)
       - GF_SESSION_COOKIE_SECURE=true
-      
-      # Custom session cookie name
       - GF_SESSION_COOKIE_NAME=grafana_sess
       
       # User Management
       # Disable user registration for security
       - GF_USERS_ALLOW_SIGN_UP=false
-      
-      # Prevent users from creating organizations
       - GF_USERS_ALLOW_ORG_CREATE=false
-      
-      # Automatically assign new users to default organization
       - GF_USERS_AUTO_ASSIGN_ORG=true
-      
-      # Default role for new users (Viewer, Editor, Admin)
       - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Viewer
       
       # Authentication Configuration
       # Disable anonymous access for security
       - GF_AUTH_ANONYMOUS_ENABLED=false
-      
-      # Keep login form enabled (set to true if using external auth only)
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       
       # SMTP Configuration (Email Notifications)
@@ -99,28 +85,35 @@ services:
       - GF_SMTP_ENABLED=${GRAFANA_SMTP_ENABLED:-false}
       
       # SMTP server configuration
-      - GF_SMTP_HOST=${GRAFANA_SMTP_HOST:-}             # e.g., smtp.gmail.com:587
-      - GF_SMTP_USER=${GRAFANA_SMTP_USER:-}             # SMTP username
-      - GF_SMTP_PASSWORD=${GRAFANA_SMTP_PASSWORD:-}     # SMTP password
-      - GF_SMTP_FROM_ADDRESS=${GRAFANA_SMTP_FROM:-grafana@example.com}  # From address
+      - GF_SMTP_HOST=${GRAFANA_SMTP_HOST:-}
+      - GF_SMTP_USER=${GRAFANA_SMTP_USER:-}
+      - GF_SMTP_PASSWORD=${GRAFANA_SMTP_PASSWORD:-}
+      - GF_SMTP_FROM_ADDRESS=${GRAFANA_SMTP_FROM:-grafana@example.com}
+       
+      - POSTGRES_DB1_HOST=${POSTGRES_DB1_HOST}
+      - POSTGRES_DB1_PORT=${POSTGRES_DB1_PORT}
+      - POSTGRES_DB1_DATABASE=${POSTGRES_DB1_DATABASE}
+      - POSTGRES_DB1_USER=${POSTGRES_DB1_USER}
+      - POSTGRES_DB1_PASSWORD=${POSTGRES_DB1_PASSWORD}
+      
+      - POSTGRES_DB2_HOST=${POSTGRES_DB2_HOST}
+      - POSTGRES_DB2_PORT=${POSTGRES_DB2_PORT}
+      - POSTGRES_DB2_DATABASE=${POSTGRES_DB2_DATABASE}
+      - POSTGRES_DB2_USER=${POSTGRES_DB2_USER}
+      - POSTGRES_DB2_PASSWORD=${POSTGRES_DB2_PASSWORD}
     
-    # Restart policy: always restart unless manually stopped
     restart: unless-stopped
-    
-    # Load additional environment variables from .env file
     env_file:
       - .env
     
-    # Resource Management
-    # Set resource limits for production stability
     deploy:
       resources:
         limits:
-          memory: 1G      # Maximum memory usage
-          cpus: '0.5'     # Maximum CPU usage (0.5 = 50% of one core)
+          memory: 1G
+          cpus: '0.5'
         reservations:
-          memory: 512M    # Guaranteed minimum memory
-          cpus: '0.25'    # Guaranteed minimum CPU
+          memory: 512M
+          cpus: '0.25'
     
     # Security Options
     # Prevent privilege escalation within container
@@ -139,10 +132,10 @@ services:
     # Monitor container health using Grafana's health API
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
-      interval: 30s      # Check every 30 seconds
-      timeout: 10s       # Timeout after 10 seconds
-      retries: 5         # Retry 5 times before marking unhealthy
-      start_period: 60s  # Wait 60 seconds before first check (allows plugin installation)
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     
     # Container Labels
     # Labels for service discovery and management
@@ -160,31 +153,25 @@ services:
       - "environment=production"
     
     # Logging Configuration
-    # Configure Docker logging driver for log rotation
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"    # Maximum log file size
-        max-file: "3"      # Keep 3 log files (30MB total)
-        labels: "app,environment"  # Include labels in logs
+        max-size: "10m"
+        max-file: "3"
+        labels: "app,environment"
     
-    # Network Configuration
-    # Connect to multiple networks for flexibility
     networks:
-      - monitoring  # Custom monitoring network
-      - default     # Default bridge network
+      - monitoring
+      - default
 
 # Network Definitions
 networks:
-  # Custom monitoring network for service isolation
   monitoring:
     driver: bridge
     driver_opts:
-      # Custom bridge name for easier identification
       com.docker.network.bridge.name: br-monitoring
     ipam:
       config:
-        # Dedicated subnet for monitoring services
         - subnet: 172.20.0.0/16
   
   # Default network for general connectivity
@@ -192,9 +179,7 @@ networks:
     driver: bridge
 
 # Volume Definitions
-# Named volumes for better data management and portability
 volumes:
-  # Grafana data volume (dashboards, users, settings)
   grafana_data:
     driver: local
     driver_opts:
@@ -202,7 +187,6 @@ volumes:
       o: bind
       device: ./grafana/data
   
-  # Grafana logs volume (application logs)
   grafana_logs:
     driver: local
     driver_opts:
