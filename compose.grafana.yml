@@ -1,5 +1,10 @@
 name: grafana-monitoring-prod
 
+# Dependencies
+x-deps-defaults: &deps-defaults
+  postgres:
+    condition: service_healthy
+
 # External Data Sources
 x-data-sources: &data-sources
   POSTGRES_DB1_HOST: ${POSTGRES_DB1_HOST}
@@ -60,9 +65,6 @@ services:
 
   grafana:
     image: grafana/grafana:12.0.1
-    depends_on:
-      postgres:
-        condition: service_healthy
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     volumes:
@@ -131,6 +133,8 @@ services:
     networks:
       - monitoring
       - default
+    depends_on:
+      <<: *deps-defaults
   
   prometheus:
     image: prom/prometheus:latest
@@ -152,10 +156,28 @@ services:
     restart: unless-stopped
     <<: *security-defaults
     read_only: false
-    user: "472:472"
     networks:
       - monitoring
       - default
+    depends_on:
+      <<: *deps-defaults
+
+  alloy:
+    image: grafana/alloy:latest
+    networks:
+      - monitoring
+    ports:
+      - "12345:12345"
+    volumes:
+      - ./config/alloy/config.alloy:/etc/alloy/config.alloy:ro
+    command: 
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    restart: unless-stopped
+    depends_on:
+      <<: *deps-defaults
 
 # Network Definitions
 networks:

@@ -1,0 +1,61 @@
+// PostgreSQL exporter configuration
+prometheus.exporter.postgres "main" {
+    // Connection to PostgreSQL database
+    data_source_names = [
+        "postgresql://postgres:postgres@postgres:5432/myapp?sslmode=disable",
+    ]
+    
+    // Auto-discover databases
+    autodiscovery {
+        enabled = true
+        // Include specific databases (optional)
+        database_allowlist = ["myapp", "postgres"]
+    }
+    
+    // Enable specific collectors
+    enabled_collectors = [
+        "database",
+        "database_wraparound", 
+        "locks",
+        "long_running_transactions",
+        "postmaster",
+        "process_idle",
+        "replication",
+        "stat_activity_autovacuum",
+        "stat_bgwriter",
+        "stat_database",
+        "stat_statements",
+        "stat_user_tables",
+        "statio_user_indexes",
+        "statio_user_tables",
+        "wal",
+    ]
+}
+
+// Scrape PostgreSQL metrics
+prometheus.scrape "postgres" {
+    targets = prometheus.exporter.postgres.main.targets
+    forward_to = [prometheus.remote_write.mimir.receiver]
+    job_name = "postgres"
+    scrape_interval = "15s"
+}
+
+// Optional: Add system-level metrics for the PostgreSQL host
+prometheus.exporter.unix "system" {
+    // Unix exporter doesn't use enabled_collectors in Alloy
+    // It automatically exports system metrics
+}
+
+prometheus.scrape "system" {
+    targets = prometheus.exporter.unix.system.targets
+    forward_to = [prometheus.remote_write.mimir.receiver]
+    job_name = "system"
+    scrape_interval = "15s"
+}
+
+// Send metrics to Prometheus
+prometheus.remote_write "mimir" {
+    endpoint {
+        url = "http://prometheus:9090/api/v1/write"
+    }
+}
