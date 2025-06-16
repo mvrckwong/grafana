@@ -1,0 +1,140 @@
+name: grafana-monitoring-prod
+
+# Common configurations using YAML anchors
+x-common-env: &common-env
+  ENVIRONMENT: production
+
+x-logging-defaults: &logging-defaults
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+    labels: "app,environment"
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+
+x-security-defaults: &security-defaults
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      <<: *common-env
+      POSTGRES_USER: ${POSTGRES_USER:-grafana}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-grafana}
+      POSTGRES_DB: ${POSTGRES_DB:-grafana}
+    ports:
+      - "${PORT_GRAFANA_POSTGRES:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-grafana}"]
+      start_period: 30s
+    restart: always
+    logging: *logging-defaults
+    <<: *security-defaults
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:12.0.1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+      - grafana_logs:/var/log/grafana
+      - grafana_plugins:/var/lib/grafana/plugins
+    environment:
+      <<: *common-env
+      
+      # Admin & Server Configuration
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_SERVER_DOMAIN: ${GRAFANA_DOMAIN:-localhost}
+      GF_SERVER_ENFORCE_DOMAIN: "true"
+      
+      # Database Configuration
+      GF_DATABASE_TYPE: ${GRAFANA_DB_TYPE:-postgres}
+      GF_DATABASE_HOST: ${GRAFANA_DB_HOST:-postgres:5432}
+      GF_DATABASE_NAME: ${GRAFANA_DB_NAME:-grafana}
+      GF_DATABASE_USER: ${GRAFANA_DB_USER:-${POSTGRES_USER:-grafana}}
+      GF_DATABASE_PASSWORD: ${GRAFANA_DB_PASSWORD:-${POSTGRES_PASSWORD:-grafana}}
+      
+      # Security Configuration
+      GF_SECURITY_ALLOW_EMBEDDING: ${GF_ALLOW_EMBEDDING:-false}
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: strict
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_SECURITY_STRICT_TRANSPORT_SECURITY: "true"
+      GF_SECURITY_STRICT_TRANSPORT_SECURITY_MAX_AGE_SECONDS: "31536000"
+      GF_SECURITY_X_CONTENT_TYPE_OPTIONS: "true"
+      GF_SECURITY_X_XSS_PROTECTION: "true"
+      GF_SECURITY_CONTENT_SECURITY_POLICY: "true"
+      
+      # Authentication & Users
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_ALLOW_ORG_CREATE: "false"
+      GF_USERS_AUTO_ASSIGN_ORG: "true"
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: ${GF_DEFAULT_ROLE:-Viewer}
+      
+      # Session & Logging
+      GF_SESSION_PROVIDER: file
+      GF_SESSION_COOKIE_SECURE: "true"
+      GF_SESSION_COOKIE_NAME: grafana_sess
+      GF_LOG_MODE: file
+      GF_LOG_LEVEL: ${GRAFANA_LOG_LEVEL:-info}
+      GF_LOG_FILTERS: ${GRAFANA_LOG_FILTERS:-}
+      
+      # Plugins
+      GF_INSTALL_PLUGINS: ${GRAFANA_PLUGINS:-grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel,grafana-worldmap-panel}
+      
+    restart: unless-stopped
+    env_file:
+      - .env
+    <<: *security-defaults
+    read_only: false
+    user: "472:472"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      start_period: 60s
+    logging: *logging-defaults
+    networks:
+      - monitoring
+      - default
+
+# Network Definitions
+networks:
+  monitoring:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-monitoring
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  default:
+    driver: bridge
+
+# Volume Definitions
+volumes:
+  postgres_data:
+    driver: local
+  grafana_data:
+    driver: local
+  grafana_logs:
+    driver: local
+  grafana_plugins:
+    driver: local
