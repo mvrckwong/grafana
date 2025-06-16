@@ -131,6 +131,28 @@ services:
     networks:
       - monitoring
       - default
+  
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-remote-write-receiver'
+    restart: unless-stopped
+    <<: *security-defaults
+    read_only: false
+    user: "472:472"
+    networks:
+      - monitoring
+      - default
 
 # Network Definitions
 networks:
@@ -153,4 +175,6 @@ volumes:
   grafana_logs:
     driver: local
   grafana_plugins:
+    driver: local
+  prometheus_data:
     driver: local
