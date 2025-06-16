@@ -99,7 +99,7 @@ services:
       GF_LOG_FILTERS: ${GRAFANA_LOG_FILTERS:-}
       
       # Plugins
-      GF_INSTALL_PLUGINS: ${GRAFANA_PLUGINS:-grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel,grafana-worldmap-panel}
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel,grafana-worldmap-panel"
       
     restart: unless-stopped
     env_file:
