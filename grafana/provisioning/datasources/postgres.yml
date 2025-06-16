@@ -44,3 +44,25 @@ datasources:
     isDefault: false
     version: 1
     uid: neon-db2-sample
+
+  - name: "Neon Postgres - Test"
+    type: postgres
+    access: proxy
+    url: "${POSTGRES_DB3_HOST}:${POSTGRES_DB3_PORT}"
+    database: "${POSTGRES_DB3_DATABASE}"
+    user: "${POSTGRES_DB3_USER}"
+    secureJsonData:
+      password: "${POSTGRES_DB3_PASSWORD}"
+    jsonData:
+      sslmode: "require"
+      maxOpenConns: 100
+      maxIdleConns: 25
+      maxIdleConnsAuto: true
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: false
+    editable: true
+    orgId: 1
+    isDefault: false
+    version: 1
+    uid: neon-db3-sample

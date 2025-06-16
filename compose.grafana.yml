@@ -1,9 +1,26 @@
 name: grafana-monitoring-prod
 
-# Common configurations using YAML anchors
-x-common-env: &common-env
-  ENVIRONMENT: production
+# External Data Sources
+x-data-sources: &data-sources
+  POSTGRES_DB1_HOST: ${POSTGRES_DB1_HOST}
+  POSTGRES_DB1_PORT: ${POSTGRES_DB1_PORT}
+  POSTGRES_DB1_DATABASE: ${POSTGRES_DB1_DATABASE}
+  POSTGRES_DB1_USER: ${POSTGRES_DB1_USER}
+  POSTGRES_DB1_PASSWORD: ${POSTGRES_DB1_PASSWORD}
 
+  POSTGRES_DB2_HOST: ${POSTGRES_DB2_HOST}
+  POSTGRES_DB2_PORT: ${POSTGRES_DB2_PORT}
+  POSTGRES_DB2_DATABASE: ${POSTGRES_DB2_DATABASE}
+  POSTGRES_DB2_USER: ${POSTGRES_DB2_USER}
+  POSTGRES_DB2_PASSWORD: ${POSTGRES_DB2_PASSWORD}
+
+  POSTGRES_DB3_HOST: ${POSTGRES_DB3_HOST}
+  POSTGRES_DB3_PORT: ${POSTGRES_DB3_PORT}
+  POSTGRES_DB3_DATABASE: ${POSTGRES_DB3_DATABASE}
+  POSTGRES_DB3_USER: ${POSTGRES_DB3_USER}
+  POSTGRES_DB3_PASSWORD: ${POSTGRES_DB3_PASSWORD}
+
+# Common configurations using YAML anchors
 x-logging-defaults: &logging-defaults
   driver: "json-file"
   options:
@@ -24,7 +41,6 @@ services:
   postgres:
     image: postgres:13
     environment:
-      <<: *common-env
       POSTGRES_USER: ${POSTGRES_USER:-grafana}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-grafana}
       POSTGRES_DB: ${POSTGRES_DB:-grafana}
@@ -55,7 +71,7 @@ services:
       - grafana_logs:/var/log/grafana
       - grafana_plugins:/var/lib/grafana/plugins
     environment:
-      <<: *common-env
+      <<: *data-sources
       
       # Admin & Server Configuration
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
@@ -100,7 +116,7 @@ services:
       
       # Plugins
       GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel,grafana-worldmap-panel"
-      
+
     restart: unless-stopped
     env_file:
       - .env
