@@ -1,0 +1,24 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: email receiver
+    receivers:
+      - uid: "1"
+        type: email
+        settings:
+          addresses: <example@email.com>
+        disableResolveMessage: false
+
+  - orgId: 1
+    name: slack receiver
+    receivers:
+      - uid: "2"
+        type: slack
+        settings:
+          url: <your-slack-webhook-url>
+          channel: "#alerts"
+          username: "Grafana"
+          title: "{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}"
+          text: "{{ range .Alerts }}{{ .Annotations.description }}{{ end }}"
+        disableResolveMessage: false 

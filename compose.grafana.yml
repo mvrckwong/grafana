@@ -126,6 +126,9 @@ services:
       
       # Plugins
       GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel,grafana-worldmap-panel"
+      
+      # Feature Toggles
+      GF_FEATURE_TOGGLES_ENABLE: "provisioning"
 
     restart: unless-stopped
     env_file:
