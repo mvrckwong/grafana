@@ -7,3 +7,14 @@ scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+
+  # PostgreSQL internal metrics from Alloy (neon-db3-sample only)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['alloy:12345']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'pg_.*'
+        action: keep

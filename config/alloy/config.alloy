@@ -1,15 +1,15 @@
 // PostgreSQL exporter configuration
 prometheus.exporter.postgres "main" {
-    // Connection to PostgreSQL database
+    // Connection to PostgreSQL database (neon-db3-sample only)
     data_source_names = [
-        "postgresql://postgres:postgres@postgres:5432/myapp?sslmode=disable",
+       "postgresql://" + env("POSTGRES_DB3_USER") + ":" + env("POSTGRES_DB3_PASSWORD") + "@" + env("POSTGRES_DB3_HOST") + ":" + env("POSTGRES_DB3_PORT") + "/" + env("POSTGRES_DB3_DATABASE") + "?sslmode=require",
     ]
     
     // Auto-discover databases
     autodiscovery {
         enabled = true
         // Include specific databases (optional)
-        database_allowlist = ["myapp", "postgres"]
+        database_allowlist = ["grafana", "postgres"]
     }
     
     // Enable specific collectors
@@ -32,30 +32,3 @@ prometheus.exporter.postgres "main" {
     ]
 }
 
-// Scrape PostgreSQL metrics
-prometheus.scrape "postgres" {
-    targets = prometheus.exporter.postgres.main.targets
-    forward_to = [prometheus.remote_write.mimir.receiver]
-    job_name = "postgres"
-    scrape_interval = "15s"
-}
-
-// Optional: Add system-level metrics for the PostgreSQL host
-prometheus.exporter.unix "system" {
-    // Unix exporter doesn't use enabled_collectors in Alloy
-    // It automatically exports system metrics
-}
-
-prometheus.scrape "system" {
-    targets = prometheus.exporter.unix.system.targets
-    forward_to = [prometheus.remote_write.mimir.receiver]
-    job_name = "system"
-    scrape_interval = "15s"
-}
-
-// Send metrics to Prometheus
-prometheus.remote_write "mimir" {
-    endpoint {
-        url = "http://prometheus:9090/api/v1/write"
-    }
-}
