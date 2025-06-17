@@ -55,6 +55,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      # This allows connections from Grafana
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
     ports:
       - "${PORT_GRAFANA_POSTGRES:-5432}:5432"
     volumes:
@@ -82,8 +84,8 @@ services:
       <<: *data-sources
       
       # Admin & Server Configuration
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
       GF_SERVER_DOMAIN: ${GRAFANA_DOMAIN:-localhost}
       GF_SERVER_ENFORCE_DOMAIN: "true"
@@ -189,11 +191,6 @@ services:
 networks:
   monitoring:
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: br-monitoring
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
   default:
     driver: bridge
 
